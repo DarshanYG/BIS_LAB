@@ -1,0 +1,101 @@
+import random
+import math
+
+def distance(city1, city2):
+    """Euclidean distance between two cities"""
+    return math.sqrt((city1[0] - city2[0])**2 + (city1[1] - city2[1])**2)
+
+def total_distance(tour, cities):
+    """Calculate total distance of a tour"""
+    dist = 0
+    for i in range(len(tour)):
+        dist += distance(cities[tour[i]], cities[tour[(i+1) % len(tour)]])
+    return dist
+
+
+def create_individual(num_cities):
+    """Create a random tour"""
+    tour = list(range(num_cities))
+    random.shuffle(tour)
+    return tour
+
+def crossover(parent1, parent2):
+    """Order Crossover (OX)"""
+    start, end = sorted(random.sample(range(len(parent1)), 2))
+    child = [None] * len(parent1)
+
+ 
+    child[start:end] = parent1[start:end]
+
+
+    p2_items = [city for city in parent2 if city not in child]
+    pos = 0
+    for i in range(len(child)):
+        if child[i] is None:
+            child[i] = p2_items[pos]
+            pos += 1
+    return child
+
+def mutate(tour, mutation_rate=0.1):
+    """Swap mutation"""
+    for _ in range(len(tour)):
+        if random.random() < mutation_rate:
+            i, j = random.sample(range(len(tour)), 2)
+            tour[i], tour[j] = tour[j], tour[i]
+    return tour
+
+def selection(population, fitness_scores):
+    """Tournament selection"""
+    tournament_size = 3
+    selected = random.sample(list(zip(population, fitness_scores)), tournament_size)
+    selected.sort(key=lambda x: x[1], reverse=True)
+    return selected[0][0]
+
+
+def genetic_algorithm_tsp(cities, pop_size=50, generations=10, crossover_rate=0.9, mutation_rate=0.1):
+    num_cities = len(cities)
+
+
+    population = [create_individual(num_cities) for _ in range(pop_size)]
+
+    best_tour = None
+    best_distance = float("inf")
+
+    for gen in range(generations):
+        fitness_scores = [1 / total_distance(tour, cities) for tour in population]
+
+
+        for tour, fit in zip(population, fitness_scores):
+            dist = total_distance(tour, cities)
+            if dist < best_distance:
+                best_distance = dist
+                best_tour = tour
+
+        new_population = []
+        while len(new_population) < pop_size:
+            parent1 = selection(population, fitness_scores)
+            parent2 = selection(population, fitness_scores)
+
+            if random.random() < crossover_rate:
+                child = crossover(parent1, parent2)
+            else:
+                child = parent1[:]
+
+            child = mutate(child, mutation_rate)
+            new_population.append(child)
+
+        population = new_population
+
+        print(f"Generation {gen+1}: Best Distance = {best_distance:.2f}")
+
+    print("\nBest tour found:")
+    print(best_tour)
+    print("Best distance:", best_distance)
+
+if __name__ == "__main__":
+ 
+    cities = [
+        (0, 0), (1, 5), (5, 2), (6, 6),
+        (8, 3), (7, 9), (2, 7), (3, 4)
+    ]
+    genetic_algorithm_tsp(cities)
