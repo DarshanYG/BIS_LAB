@@ -1,0 +1,70 @@
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+
+
+def parallel_cellular_edge_detection(image, threshold):
+    """
+    Perform edge detection using a simple cellular automata rule.
+    :param image: Grayscale image (2D numpy array)
+    :param threshold: Intensity difference threshold
+    :return: Binary edge image
+    """
+    # Step 1: Pad image to handle borders
+    padded_img = np.pad(image, pad_width=1, mode='edge')
+    rows, cols = image.shape
+
+    # Step 2: Initialize edge matrix
+    edges = np.zeros_like(image)
+
+    # Step 3: Define 3x3 neighborhood offsets
+    neighbors = [(-1, -1), (-1, 0), (-1, 1),
+                 (0, -1),          (0, 1),
+                 (1, -1),  (1, 0), (1, 1)]
+
+    # Step 4: Evaluate local differences
+    for i in range(1, rows + 1):
+        for j in range(1, cols + 1):
+            center_val = padded_img[i, j]
+            max_diff = 0
+
+            # Compare with all 8 neighbors
+            for dy, dx in neighbors:
+                neighbor_val = padded_img[i + dy, j + dx]
+                diff = abs(int(center_val) - int(neighbor_val))
+                if diff > max_diff:
+                    max_diff = diff
+
+            # Step 5: Thresholding rule
+            if max_diff > threshold:
+                edges[i - 1, j - 1] = 255  # mark as edge
+            else:
+                edges[i - 1, j - 1] = 0    # non-edge
+
+    return edges
+
+# Load image (convert to grayscale)
+image = cv2.imread('sample_image.jpg', cv2.IMREAD_GRAYSCALE)
+
+# Resize for clarity (optional)
+image = cv2.resize(image, (150, 150))
+
+# Define threshold
+threshold = 15
+
+# Run PCA-based edge detection
+edges = parallel_cellular_edge_detection(image, threshold)
+
+# Display Results
+plt.figure(figsize=(8,4))
+plt.subplot(1,2,1)
+plt.title("Original Image")
+plt.imshow(image, cmap='gray')
+plt.axis('off')
+
+plt.subplot(1,2,2)
+plt.title("Edges Detected")
+plt.imshow(edges, cmap='gray')
+plt.axis('off')
+
+plt.show()
