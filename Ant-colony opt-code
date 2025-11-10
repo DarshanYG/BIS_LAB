@@ -1,0 +1,83 @@
+import random
+
+# Problem setup
+num_jobs = 10
+num_machines = 3
+processing_time = [
+    [5, 8, 6],
+    [7, 9, 5],
+    [8, 6, 7],
+    [6, 5, 9],
+    [7, 8, 6],
+    [5, 9, 7],
+    [8, 6, 5],
+    [7, 9, 8],
+    [9, 7, 6],
+    [6, 8, 7]
+]
+
+# Parameters
+alpha = 1.0     # influence of pheromone
+beta = 2.0      # influence of heuristic
+rho = 0.1       # pheromone evaporation rate
+Q = 100.0       # pheromone deposit factor
+num_ants = 5
+max_iterations = 50
+
+# Initialize pheromone matrix
+pheromone = [[1.0 for _ in range(num_jobs)] for _ in range(num_machines)]
+
+best_makespan = float('inf')
+best_assignment = None
+
+for iteration in range(max_iterations):
+    for ant in range(num_ants):
+        machine_loads = [0 for _ in range(num_machines)]
+        assignment = [0 for _ in range(num_jobs)]
+
+        for j in range(num_jobs):
+            # Calculate heuristic (inverse of load and time)
+            heuristic = [1.0 / (machine_loads[m] + processing_time[j][m]) for m in range(num_machines)]
+            prob = [0 for _ in range(num_machines)]
+
+            # Probability for each machine
+            for m in range(num_machines):
+                prob[m] = (pheromone[m][j] ** alpha) * (heuristic[m] ** beta)
+
+            # Normalize probabilities
+            total = sum(prob)
+            prob = [p / total for p in prob]
+
+            # Choose machine based on probability
+            r = random.random()
+            cumulative = 0
+            for m in range(num_machines):
+                cumulative += prob[m]
+                if r <= cumulative:
+                    chosen_machine = m
+                    break
+
+            # Assign job j to chosen machine
+            assignment[j] = chosen_machine
+            machine_loads[chosen_machine] += processing_time[j][chosen_machine]
+
+        # Calculate makespan
+        makespan = max(machine_loads)
+
+        # Update best solution
+        if makespan < best_makespan:
+            best_makespan = makespan
+            best_assignment = assignment.copy()
+
+  
+    for m in range(num_machines):
+        for j in range(num_jobs):
+            pheromone[m][j] *= (1 - rho)
+
+    for j in range(num_jobs):
+        m = best_assignment[j]
+        pheromone[m][j] += Q / best_makespan
+
+print("Optimal Makespan Found:", best_makespan)
+print("Best Job-to-Machine Assignment (Job Index → Machine Index):")
+print(best_assignment)
