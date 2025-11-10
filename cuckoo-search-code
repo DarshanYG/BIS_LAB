@@ -1,0 +1,73 @@
+import random
+import math
+
+# Distance matrix (10 cities)
+dist_matrix = [
+    [0, 29, 20, 21, 16, 31, 100, 12, 4, 31],
+    [29, 0, 15, 29, 28, 40, 72, 21, 29, 41],
+    [20, 15, 0, 15, 14, 25, 81, 9, 23, 27],
+    [21, 29, 15, 0, 4, 12, 92, 12, 25, 13],
+    [16, 28, 14, 4, 0, 16, 94, 9, 20, 16],
+    [31, 40, 25, 12, 16, 0, 95, 24, 36, 3],
+    [100, 72, 81, 92, 94, 95, 0, 90, 101, 99],
+    [12, 21, 9, 12, 9, 24, 90, 0, 15, 25],
+    [4, 29, 23, 25, 20, 36, 101, 15, 0, 35],
+    [31, 41, 27, 13, 16, 3, 99, 25, 35, 0]
+]
+
+num_cities = 10
+num_nests = 10
+pa = 0.25          # Discovery probability
+max_iter = 5       # Iterations
+
+def tour_length(tour):
+    """Compute total distance of a given tour"""
+    dist = 0
+    for i in range(len(tour) - 1):
+        dist += dist_matrix[tour[i]][tour[i + 1]]
+    dist += dist_matrix[tour[-1]][tour[0]]  # return to start
+    return dist
+
+def random_permutation():
+    """Generate a random permutation of cities"""
+    perm = list(range(num_cities))
+    random.shuffle(perm)
+    return perm
+
+def get_new_solution(tour):
+    """Generate a new solution by reversing a random subsequence (discrete Lévy flight)"""
+    a, b = sorted(random.sample(range(num_cities), 2))
+    new_tour = tour[:a] + list(reversed(tour[a:b])) + tour[b:]
+    return new_tour
+
+nests = [random_permutation() for _ in range(num_nests)]
+fitness = [tour_length(t) for t in nests]
+
+best_index = fitness.index(min(fitness))
+best_tour = nests[best_index]
+best_distance = fitness[best_index]
+
+for iteration in range(max_iter + 1):
+    for i in range(num_nests):
+        new_tour = get_new_solution(nests[i])
+        new_dist = tour_length(new_tour)
+        if new_dist < fitness[i]:
+            nests[i] = new_tour
+            fitness[i] = new_dist
+
+    # Abandon some worst nests
+    num_abandon = int(pa * num_nests)
+    for _ in range(num_abandon):
+        worst_index = fitness.index(max(fitness))
+        nests[worst_index] = random_permutation()
+        fitness[worst_index] = tour_length(nests[worst_index])
+
+    # Update best
+    current_best = min(fitness)
+    if current_best < best_distance:
+        best_distance = current_best
+        best_tour = nests[fitness.index(current_best)]
+
+    print(f"Iteration {iteration}: {best_distance:.2f}")
+
+print("Best Tour Found:", best_tour)
